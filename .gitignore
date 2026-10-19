@@ -2,6 +2,7 @@
 samples/*.pcap
 samples/*.pcapng
 samples/*.cap
+samples/normal_mixed.pcap
 samples/synthetic/
 __pycache__/
 *.py[cod]

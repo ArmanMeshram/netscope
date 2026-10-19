@@ -8,6 +8,8 @@ from scapy.packet import Raw
 from scapy.utils import wrpcap
 
 from app.parser import parse_pcap
+from scripts.generate_sample_pcaps import OUTPUT as SYNTHETIC_DIR
+from scripts.generate_sample_pcaps import generate as generate_sample_pcaps
 
 
 def parse_packets(tmp_path: Path, packets: list[object]) -> list[dict]:
@@ -53,7 +55,7 @@ def test_non_ip_and_truncated_packets_do_not_crash(tmp_path: Path) -> None:
 
 def test_real_sample_pcaps_are_stream_readable() -> None:
     sample_dir = Path(__file__).resolve().parents[1] / "samples"
-    expected = {"dns-remoteshell.pcap", "dns.pcap", "ipv4frags.pcap", "normal_mixed.pcap", "slammer.pcap"}
+    expected = {"dns-remoteshell.pcap", "dns.pcap", "ipv4frags.pcap", "slammer.pcap"}
     existing = {path.name for path in sample_dir.iterdir() if path.is_file()}
     assert expected <= existing
     unreadable = []
@@ -63,3 +65,18 @@ def test_real_sample_pcaps_are_stream_readable() -> None:
         except Exception as exc:  # report reader failures with the offending capture
             unreadable.append(f"{name}: {exc}")
     assert not unreadable, "; ".join(unreadable)
+
+
+def test_synthetic_sample_pcaps_are_stream_readable() -> None:
+    generate_sample_pcaps()
+    expected = {
+        "synthetic_normal_traffic.pcap",
+        "port_scan.pcap",
+        "syn_flood.pcap",
+        "dns_anomalies.pcap",
+        "icmp_flood.pcap",
+    }
+    existing = {path.name for path in SYNTHETIC_DIR.glob("*.pcap")}
+    assert expected <= existing
+    for name in sorted(expected):
+        assert next(parse_pcap(SYNTHETIC_DIR / name), None) is not None

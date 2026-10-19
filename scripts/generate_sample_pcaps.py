@@ -20,7 +20,7 @@ def write_capture(name: str, packets: list[object]) -> None:
 
 def generate() -> None:
     """Create normal traffic and four simple anomaly scenarios."""
-    write_capture("normal_mixed.pcap", [
+    write_capture("synthetic_normal_traffic.pcap", [
         Ether() / IP(src="192.0.2.10", dst="198.51.100.2") / TCP(sport=51000, dport=443, flags="S"),
         Ether() / IP(src="192.0.2.10", dst="198.51.100.53") / UDP(sport=53000, dport=53) / DNS(rd=1, qd=DNSQR(qname="example.test")),
         Ether() / IPv6(src="2001:db8::10", dst="2001:db8::20") / ICMPv6EchoRequest(),
@@ -36,7 +36,7 @@ def generate() -> None:
     dns_packets = [
         Ether() / IP(src="192.0.2.60", dst="198.51.100.53") / UDP(sport=53000 + i, dport=53) /
         DNS(rd=1, qd=DNSQR(qname=("x" * 250 + ".test") if i == 0 else f"missing{i}.test"),
-            an=None, rcode=0 if i == 0 else 3)
+            rcode=0 if i == 0 else 3)
         for i in range(100)
     ]
     write_capture("dns_anomalies.pcap", dns_packets)
