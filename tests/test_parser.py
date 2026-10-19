@@ -7,7 +7,7 @@ from scapy.layers.l2 import ARP, Ether
 from scapy.packet import Raw
 from scapy.utils import wrpcap
 
-from netscope.app.parser import parse_pcap
+from app.parser import parse_pcap
 
 
 def parse_packets(tmp_path: Path, packets: list[object]) -> list[dict]:
