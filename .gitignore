@@ -1,0 +1,7 @@
+# Captures are user data and may exceed the 5 MB repository limit.
+samples/*.pcap
+samples/*.pcapng
+samples/*.cap
+samples/synthetic/
+__pycache__/
+*.py[cod]
