@@ -6,3 +6,5 @@ samples/normal_mixed.pcap
 samples/synthetic/
 __pycache__/
 *.py[cod]
+netscope.db
+*.sqlite3
