@@ -104,6 +104,26 @@ def test_upload_rejects_bad_extension_and_magic(client) -> None:
     assert client.get("/api/sessions").json() == []
 
 
+def test_pcap_processing_runs_detection_and_persists_alerts(client, tmp_path) -> None:
+    path = tmp_path / "port-scan.pcap"
+    wrpcap(str(path), [
+        Ether() / IP(src="192.0.2.50", dst="198.51.100.20") /
+        TCP(sport=40000 + port, dport=port, flags="S")
+        for port in range(1, 26)
+    ])
+    response = client.post(
+        "/api/sessions/upload",
+        files={"file": ("port-scan.pcap", path.read_bytes(), "application/octet-stream")},
+    )
+    assert response.status_code == 202
+    session_id = response.json()["id"]
+    assert client.get(f"/api/sessions/{session_id}").json()["status"] == "completed"
+    alerts = client.get(f"/api/sessions/{session_id}/alerts").json()
+    assert len(alerts) == 1
+    assert alerts[0]["rule"] == "port_scan"
+    assert alerts[0]["alert_metadata"]["distinct_ports"] == 25
+
+
 def test_upload_enforces_configured_size_limit(client, tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("MAX_UPLOAD_MB", "1")
     payload = bytes.fromhex("d4c3b2a1") + bytes(1024 * 1024)

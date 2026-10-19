@@ -13,6 +13,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import max_upload_bytes
+from app.detection import run_detection
 from app.database import bulk_insert_packets, get_db
 from app.models import CaptureSession, CaptureSource, Packet, SessionStatus
 from app.parser import parse_pcap
@@ -56,6 +57,7 @@ def process_pcap(session_id: int, path: str) -> None:
             db, session_id, counted_packets(), batch_size=1000,
         )
         capture.byte_count = byte_count
+        run_detection(db, session_id)
         capture.status = SessionStatus.COMPLETED
         capture.ended_at = datetime.now(timezone.utc)
         db.commit()

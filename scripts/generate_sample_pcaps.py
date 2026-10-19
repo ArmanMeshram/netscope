@@ -35,7 +35,7 @@ def generate() -> None:
     ])
     dns_packets = [
         Ether() / IP(src="192.0.2.60", dst="198.51.100.53") / UDP(sport=53000 + i, dport=53) /
-        DNS(rd=1, qd=DNSQR(qname=("x" * 250 + ".test") if i == 0 else f"missing{i}.test"),
+        DNS(rd=1, qd=DNSQR(qname=(".".join(["x" * 60] * 4) + ".test") if i == 0 else f"missing{i}.test"),
             rcode=0 if i == 0 else 3)
         for i in range(100)
     ]
