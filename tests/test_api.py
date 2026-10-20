@@ -36,6 +36,15 @@ def sample_pcap(tmp_path) -> bytes:
     return path.read_bytes()
 
 
+def test_dashboard_and_static_assets_are_served(client) -> None:
+    dashboard = client.get("/")
+    assert dashboard.status_code == 200
+    assert "text/html" in dashboard.headers["content-type"]
+    assert "Traffic overview" in dashboard.text
+    assert client.get("/static/app.js").status_code == 200
+    assert client.get("/static/styles.css").status_code == 200
+
+
 def test_upload_lists_reads_summarizes_filters_and_deletes_session(client, tmp_path) -> None:
     response = client.post(
         "/api/sessions/upload",

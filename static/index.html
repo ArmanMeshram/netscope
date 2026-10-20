@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f7fb">
+    <title>NetScope · Network Traffic Analyzer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="/" aria-label="NetScope dashboard home">
+          <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 36 36"><path d="M4 19h6l4-10 7 19 5-13 3 4h3"/><circle cx="18" cy="18" r="16"/></svg></span>
+          <span class="brand-copy"><strong>NetScope</strong><small>NETWORK INTELLIGENCE</small></span>
+        </a>
+
+        <div class="side-section-label">WORKSPACE <span class="live-dot"></span></div>
+        <div class="side-heading"><span>Capture sessions</span><span id="session-count" class="count-chip">0</span></div>
+        <div id="session-list" class="session-list" aria-live="polite">
+          <div class="side-loading"><span class="spinner"></span>Loading sessions…</div>
+        </div>
+
+        <div class="sidebar-bottom">
+          <div class="side-note-icon">⌁</div>
+          <div><strong>Offline analysis</strong><p>PCAP files are processed locally by this service.</p></div>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div class="breadcrumb"><span>Workspace</span><b>/</b><strong id="breadcrumb-session">Overview</strong></div>
+          <div class="topbar-actions">
+            <span class="api-status"><i></i> API connected</span>
+            <button class="icon-button" id="theme-toggle" type="button" aria-label="Toggle color theme" title="Toggle theme">
+              <svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <section class="page-heading">
+          <div>
+            <p class="eyebrow">NETWORK OBSERVABILITY</p>
+            <h1 id="page-title">Traffic overview</h1>
+            <p class="page-subtitle" id="page-subtitle">Import a capture to inspect protocols, endpoints, and security signals.</p>
+          </div>
+          <form id="upload-form" class="upload-form">
+            <input id="pcap-file" type="file" accept=".pcap,.cap,.pcapng" hidden>
+            <button id="upload-button" class="button button-primary" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5"/></svg>
+              <span>Upload PCAP</span>
+            </button>
+            <span class="upload-hint">PCAP · CAP · PCAPNG</span>
+          </form>
+        </section>
+
+        <div id="page-error" class="notice notice-error" role="alert" hidden></div>
+        <div id="page-loading" class="loading-panel" hidden><span class="spinner"></span><span>Loading capture analysis…</span></div>
+        <div id="empty-state" class="empty-state">
+          <div class="empty-illustration" aria-hidden="true"><span>↗</span><span>◌</span><span>↘</span><i></i></div>
+          <h2>Your network, in focus</h2>
+          <p>Upload a PCAP capture to explore traffic patterns, endpoint activity, and potential anomalies.</p>
+          <button class="button button-primary" type="button" data-action="choose-file">Choose a capture</button>
+          <small>Files are streamed into the analyzer and are limited by server configuration.</small>
+        </div>
+
+        <div id="dashboard-content" hidden>
+          <section class="metric-grid" aria-label="Session metrics">
+            <article class="metric-card"><div class="metric-label">PACKETS CAPTURED <span class="metric-icon purple">⌁</span></div><div id="metric-packets" class="metric-value">—</div><div id="metric-packets-foot" class="metric-foot">Total parsed frames</div></article>
+            <article class="metric-card"><div class="metric-label">TOTAL DATA <span class="metric-icon blue">▤</span></div><div id="metric-bytes" class="metric-value">—</div><div class="metric-foot">Captured frame bytes</div></article>
+            <article class="metric-card"><div class="metric-label">CAPTURE DURATION <span class="metric-icon green">◷</span></div><div id="metric-duration" class="metric-value">—</div><div class="metric-foot">First to last packet</div></article>
+            <article class="metric-card"><div class="metric-label">SECURITY ALERTS <span class="metric-icon orange">⚑</span></div><div id="metric-alerts" class="metric-value">—</div><div id="metric-alerts-foot" class="metric-foot">Rule-based findings</div></article>
+          </section>
+
+          <section class="chart-grid">
+            <article class="panel chart-panel">
+              <div class="panel-heading"><div><h2>Traffic over time</h2><p>Packet volume by interval</p></div><label class="bucket-select">Bucket <select id="bucket-size"><option value="1">1 sec</option><option value="5">5 sec</option><option value="10">10 sec</option><option value="60">1 min</option></select></label></div>
+              <div class="chart-wrap line-chart-wrap"><canvas id="traffic-chart" aria-label="Traffic over time line chart"></canvas><div class="chart-empty" id="traffic-empty" hidden>No traffic time series available.</div></div>
+            </article>
+            <article class="panel chart-panel protocol-panel">
+              <div class="panel-heading"><div><h2>Protocol mix</h2><p>Distribution across captured packets</p></div><span class="panel-kebab" aria-hidden="true">···</span></div>
+              <div class="protocol-chart-area"><div class="doughnut-wrap"><canvas id="protocol-chart" aria-label="Protocol distribution doughnut chart"></canvas><div class="doughnut-center"><strong id="protocol-total">0</strong><span>PACKETS</span></div></div><div id="protocol-legend" class="protocol-legend"></div></div>
+            </article>
+          </section>
+
+          <section class="insight-grid">
+            <article class="panel list-panel"><div class="panel-heading"><div><h2>Top source addresses</h2><p>Most active senders</p></div><span class="table-count" id="source-count">TOP 10</span></div><div id="sources-list" class="rank-list"></div></article>
+            <article class="panel list-panel"><div class="panel-heading"><div><h2>Top destinations</h2><p>Most contacted hosts</p></div><span class="table-count" id="destination-count">TOP 10</span></div><div id="destinations-list" class="rank-list"></div></article>
+            <article class="panel alerts-panel"><div class="panel-heading"><div><h2>Security alerts</h2><p>Rule-based anomaly findings</p></div><span class="alert-total" id="alert-total">0</span></div><div id="alerts-list" class="alerts-list"></div></article>
+          </section>
+
+          <section class="panel packets-panel">
+            <div class="panel-heading packet-heading"><div><h2>Packet explorer</h2><p>Search and inspect individual frames</p></div><span id="packet-results" class="table-count">0 RESULTS</span></div>
+            <form id="packet-filters" class="filter-bar">
+              <label class="filter-control"><span>Protocol</span><select name="protocol"><option value="">All protocols</option><option>DNS</option><option>TCP</option><option>UDP</option><option>ICMP</option><option>OTHER</option></select></label>
+              <label class="filter-control"><span>Source IP</span><input name="src_ip" type="text" placeholder="e.g. 192.0.2.1"></label>
+              <label class="filter-control"><span>Destination IP</span><input name="dst_ip" type="text" placeholder="e.g. 198.51.100.1"></label>
+              <label class="filter-control port-filter"><span>Port</span><input name="port" type="number" min="0" max="65535" placeholder="Any"></label>
+              <button class="button button-filter" type="submit">Apply filters</button>
+              <button class="button button-clear" id="clear-filters" type="button">Clear</button>
+            </form>
+            <div class="table-scroll"><table><thead><tr><th>TIME</th><th>SOURCE</th><th>DESTINATION</th><th>PROTOCOL</th><th>LENGTH</th><th>DETAILS</th></tr></thead><tbody id="packet-rows"></tbody></table></div>
+            <div id="packet-empty" class="table-empty" hidden>No packets match these filters.</div>
+            <div class="table-footer"><span id="page-range">Showing 0 packets</span><div class="pagination"><button id="prev-page" type="button" aria-label="Previous page" disabled>←</button><span id="page-indicator">1 / 1</span><button id="next-page" type="button" aria-label="Next page" disabled>→</button></div></div>
+          </section>
+          <footer class="page-footer"><span>NetScope <b>·</b> Network traffic analysis</span><span>Analysis is limited to captures you are authorized to inspect.</span></footer>
+        </div>
+      </main>
+    </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
