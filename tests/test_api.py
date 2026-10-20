@@ -41,6 +41,7 @@ def test_dashboard_and_static_assets_are_served(client) -> None:
     assert dashboard.status_code == 200
     assert "text/html" in dashboard.headers["content-type"]
     assert "Traffic overview" in dashboard.text
+    assert "Live capture is only for networks you own or are authorized to monitor." in dashboard.text
     assert client.get("/static/app.js").status_code == 200
     assert client.get("/static/styles.css").status_code == 200
 
@@ -97,6 +98,18 @@ def test_upload_lists_reads_summarizes_filters_and_deletes_session(client, tmp_p
     assert len(alerts) == 1
     assert alerts[0]["alert_metadata"] == {"evidence": 1}
 
+    csv_export = client.get(f"/api/sessions/{session_id}/export?format=csv")
+    assert csv_export.status_code == 200
+    assert "text/csv" in csv_export.headers["content-type"]
+    assert "192.0.2.1" in csv_export.text
+    json_export = client.get(f"/api/sessions/{session_id}/export?format=json")
+    assert json_export.status_code == 200
+    exported = json_export.json()
+    assert len(exported["packets"]) == 3
+    assert exported["alerts"][0]["rule"] == "test_rule"
+    assert client.get(f"/api/sessions/{session_id}/export?format=xml").status_code == 422
+    assert client.get("/api/sessions/999/export").status_code == 404
+
     assert client.delete(f"/api/sessions/{session_id}").status_code == 204
     assert client.get(f"/api/sessions/{session_id}").status_code == 404
 
@@ -147,3 +160,45 @@ def test_upload_enforces_configured_size_limit(client, tmp_path, monkeypatch) ->
 def test_missing_session_returns_not_found(client) -> None:
     assert client.get("/api/sessions/999/summary").status_code == 404
     assert client.get("/api/sessions/999/packets?from=2026-01-02T00:00:00&to=2026-01-01T00:00:00").status_code == 404
+
+
+def test_live_capture_is_disabled_by_default(client, monkeypatch) -> None:
+    monkeypatch.setenv("ENABLE_LIVE_CAPTURE", "false")
+    assert client.get("/api/capture/interfaces").status_code == 503
+    assert client.get("/api/capture/status").status_code == 503
+    response = client.post("/api/capture/start", json={"interface": "lo"})
+    assert response.status_code == 503
+    assert "ENABLE_LIVE_CAPTURE=true" in response.json()["detail"]
+
+
+def test_live_capture_starts_flushes_and_stops_cleanly(client, monkeypatch) -> None:
+    import time
+
+    import app.capture as capture_module
+
+    class FakeSocket:
+        def close(self) -> None:
+            pass
+
+    monkeypatch.setenv("ENABLE_LIVE_CAPTURE", "true")
+    monkeypatch.setattr(capture_module, "get_if_list", lambda: ["test0"])
+    monkeypatch.setattr(capture_module.conf, "L2listen", lambda **kwargs: FakeSocket())
+
+    def fake_sniff(**kwargs) -> None:
+        kwargs["prn"](Ether() / IP(src="192.0.2.1", dst="198.51.100.1") / TCP(sport=50000, dport=443, flags="A"))
+        time.sleep(0.005)
+
+    monkeypatch.setattr(capture_module, "sniff", fake_sniff)
+    response = client.post("/api/capture/start", json={"interface": "test0"})
+    assert response.status_code == 202
+    session_id = response.json()["session_id"]
+    assert response.json()["active"] is True
+    assert client.get("/api/capture/status").json()["interface"] == "test0"
+    stopped = client.post("/api/capture/stop")
+    assert stopped.status_code == 200
+    assert stopped.json()["active"] is False
+    detail = client.get(f"/api/sessions/{session_id}").json()
+    assert detail["status"] == "completed"
+    assert detail["packet_count"] > 0
+    page = client.get(f"/api/sessions/{session_id}/packets").json()
+    assert page["items"][0]["protocol"] == "TCP"

@@ -7,6 +7,11 @@ DEFAULT_DATABASE_URL = "sqlite:///./netscope.db"
 DEFAULT_MAX_UPLOAD_MB = 100
 
 
+def live_capture_enabled() -> bool:
+    """Return whether privileged live capture endpoints are enabled."""
+    return os.getenv("ENABLE_LIVE_CAPTURE", "false").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def database_url() -> str:
     """Return the configured database URL or the local SQLite default."""
     return os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)

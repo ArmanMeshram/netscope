@@ -28,7 +28,7 @@
 
         <div class="sidebar-bottom">
           <div class="side-note-icon">⌁</div>
-          <div><strong>Offline analysis</strong><p>PCAP files are processed locally by this service.</p></div>
+          <div><strong>Authorized monitoring</strong><p>Live capture is only for networks you own or are authorized to monitor.</p></div>
         </div>
       </aside>
 
@@ -49,17 +49,24 @@
             <h1 id="page-title">Traffic overview</h1>
             <p class="page-subtitle" id="page-subtitle">Import a capture to inspect protocols, endpoints, and security signals.</p>
           </div>
-          <form id="upload-form" class="upload-form">
-            <input id="pcap-file" type="file" accept=".pcap,.cap,.pcapng" hidden>
-            <button id="upload-button" class="button button-primary" type="button">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5"/></svg>
-              <span>Upload PCAP</span>
-            </button>
-            <span class="upload-hint">PCAP · CAP · PCAPNG</span>
-          </form>
+          <div class="heading-actions">
+            <form id="upload-form" class="upload-form">
+              <input id="pcap-file" type="file" accept=".pcap,.cap,.pcapng" hidden>
+              <button id="upload-button" class="button button-primary" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5"/></svg>
+                <span>Upload PCAP</span>
+              </button>
+              <span class="upload-hint">PCAP · CAP · PCAPNG</span>
+            </form>
+            <div class="export-actions" aria-label="Export selected session">
+              <a id="export-csv" class="button button-secondary" hidden>CSV</a>
+              <a id="export-json" class="button button-secondary" hidden>JSON</a>
+            </div>
+          </div>
         </section>
 
         <div id="page-error" class="notice notice-error" role="alert" hidden></div>
+        <div class="notice-authorized" role="note">Live capture is only for networks you own or are authorized to monitor.</div>
         <div id="page-loading" class="loading-panel" hidden><span class="spinner"></span><span>Loading capture analysis…</span></div>
         <div id="empty-state" class="empty-state">
           <div class="empty-illustration" aria-hidden="true"><span>↗</span><span>◌</span><span>↘</span><i></i></div>

@@ -150,6 +150,8 @@ function renderEmptyState() {
   $("dashboard-content").hidden = true;
   setLoading(false);
   destroyCharts();
+  $("export-csv").hidden = true;
+  $("export-json").hidden = true;
 }
 
 async function selectSession(sessionId) {
@@ -223,6 +225,10 @@ async function loadSelectedDashboard(session, version = state.selectionVersion) 
     ]);
     if (version !== state.selectionVersion) return;
     state.summary = summary;
+    $("export-csv").href = `/api/sessions/${session.id}/export?format=csv`;
+    $("export-json").href = `/api/sessions/${session.id}/export?format=json`;
+    $("export-csv").hidden = false;
+    $("export-json").hidden = false;
     $("breadcrumb-session").textContent = session.name;
     $("page-title").textContent = session.name;
     const statusText = session.status === "failed" ? "Processing failed" : `${session.source.toUpperCase()} capture · ${session.status}`;

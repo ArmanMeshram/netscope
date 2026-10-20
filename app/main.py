@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.database import create_tables
 from app.routers import alerts, packets, sessions
+from app import capture, export
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -27,6 +28,8 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.include_router(sessions.router)
 app.include_router(packets.router)
 app.include_router(alerts.router)
+app.include_router(export.router)
+app.include_router(capture.router)
 
 
 @app.get("/", include_in_schema=False)
