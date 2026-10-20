@@ -1,5 +1,4 @@
 scapy>=2.5,<3
-pytest>=8,<9
 fastapi>=0.115,<1
 uvicorn[standard]>=0.30,<1
 SQLAlchemy>=2.0,<3

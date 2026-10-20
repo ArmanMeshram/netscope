@@ -1,9 +1,8 @@
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
-from sqlalchemy import create_engine
 
 from app.database import Base, bulk_insert_packets
 from app.detection import (

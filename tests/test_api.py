@@ -2,11 +2,11 @@ from datetime import datetime, timezone
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import sessionmaker
 from scapy.layers.dns import DNS, DNSQR
 from scapy.layers.inet import IP, TCP, UDP
 from scapy.layers.l2 import ARP, Ether
 from scapy.utils import wrpcap
+from sqlalchemy.orm import sessionmaker
 
 import app.database as database
 from app.main import app
@@ -44,6 +44,12 @@ def test_dashboard_and_static_assets_are_served(client) -> None:
     assert "Live capture is only for networks you own or are authorized to monitor." in dashboard.text
     assert client.get("/static/app.js").status_code == 200
     assert client.get("/static/styles.css").status_code == 200
+
+
+def test_health_reports_database_connectivity(client) -> None:
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
 
 
 def test_api_timestamps_are_timezone_aware_utc(client, tmp_path) -> None:

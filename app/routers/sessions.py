@@ -8,13 +8,22 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import max_upload_bytes
-from app.detection import run_detection
 from app.database import bulk_insert_packets, get_db
+from app.detection import run_detection
 from app.models import CaptureSession, CaptureSource, Packet, SessionStatus
 from app.parser import parse_pcap
 from app.schemas import AddressCount, PortCount, SessionRead, SessionSummary, TrafficBucket

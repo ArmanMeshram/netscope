@@ -5,12 +5,12 @@ from enum import StrEnum
 from typing import Any
 
 from sqlalchemy import (
+    JSON,
     DateTime,
     Enum,
     ForeignKey,
     Index,
     Integer,
-    JSON,
     String,
     Text,
     func,

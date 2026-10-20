@@ -2,7 +2,7 @@ from pathlib import Path
 
 from scapy.layers.dns import DNS, DNSQR
 from scapy.layers.inet import ICMP, IP, TCP, UDP
-from scapy.layers.inet6 import IPv6, ICMPv6EchoRequest
+from scapy.layers.inet6 import ICMPv6EchoRequest, IPv6
 from scapy.layers.l2 import ARP, Ether
 from scapy.packet import Raw
 from scapy.utils import wrpcap

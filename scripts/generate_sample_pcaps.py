@@ -8,7 +8,6 @@ from scapy.layers.inet import ICMP, IP, TCP, UDP
 from scapy.layers.l2 import Ether
 from scapy.utils import wrpcap
 
-
 OUTPUT = Path(__file__).resolve().parents[1] / "samples" / "synthetic"
 
 

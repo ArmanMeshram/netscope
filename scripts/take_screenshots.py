@@ -17,7 +17,6 @@ from typing import Any
 
 from playwright.sync_api import Browser, Page, Playwright, sync_playwright
 
-
 ROOT = Path(__file__).resolve().parents[1]
 SCREENSHOT_DIR = ROOT / "docs" / "screenshots"
 SYNTHETIC_DIR = ROOT / "samples" / "synthetic"

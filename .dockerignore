@@ -1,0 +1,17 @@
+.git
+.gitignore
+.pytest_cache
+.ruff_cache
+__pycache__
+*.py[cod]
+*.db
+.venv
+venv
+tests/
+scripts/
+docs/
+samples/
+*.pcap
+*.pcapng
+*.cap
+requirements-dev.txt

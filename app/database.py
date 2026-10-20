@@ -1,7 +1,6 @@
 """SQLAlchemy engine, session factory, and declarative base."""
 
-from collections.abc import Generator
-from collections.abc import Iterable
+from collections.abc import Generator, Iterable
 from datetime import datetime, timezone
 from typing import Any
 

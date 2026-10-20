@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, inspect, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
-from app.database import Base, bulk_insert_packets
+from app.database import Base, bulk_insert_packets, make_engine
 from app.models import (
     Alert,
     AlertSeverity,
@@ -97,6 +97,13 @@ def test_common_query_indexes_exist() -> None:
     assert "ix_alerts_session_first_seen" in alert_indexes
     assert "ix_alerts_session_severity" in alert_indexes
     engine.dispose()
+
+
+def test_postgres_url_prefixes_select_psycopg_driver() -> None:
+    for prefix in ("postgres://", "postgresql://"):
+        engine = make_engine(f"{prefix}user:password@localhost/netscope")
+        assert engine.url.drivername == "postgresql+psycopg"
+        engine.dispose()
 
 
 def test_bulk_insert_packets_writes_bounded_batches_and_parser_extras() -> None:
