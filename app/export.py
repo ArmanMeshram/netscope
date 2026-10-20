@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app import database
 from app.database import get_db
 from app.models import Alert, CaptureSession, Packet
+from app.schemas import utc_isoformat
 
 router = APIRouter(prefix="/api/sessions", tags=["export"])
 CSV_FIELDS = (
@@ -25,7 +26,7 @@ CSV_FIELDS = (
 def _packet_values(packet: Packet) -> dict[str, Any]:
     """Convert a packet row to a JSON-ready record."""
     return {
-        "timestamp": packet.timestamp.isoformat(),
+        "timestamp": utc_isoformat(packet.timestamp),
         "src_ip": packet.src_ip,
         "dst_ip": packet.dst_ip,
         "src_port": packet.src_port,
@@ -89,8 +90,8 @@ def _stream_json(session_id: int) -> Iterator[str]:
                 "severity": alert.severity.value,
                 "description": alert.description,
                 "src_ip": alert.src_ip,
-                "first_seen": alert.first_seen.isoformat(),
-                "last_seen": alert.last_seen.isoformat(),
+                "first_seen": utc_isoformat(alert.first_seen),
+                "last_seen": utc_isoformat(alert.last_seen),
                 "metadata": alert.alert_metadata or {},
             }
             yield json.dumps(data, separators=(",", ":"))

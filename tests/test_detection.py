@@ -42,6 +42,11 @@ def test_each_detection_rule_fires_on_its_synthetic_capture() -> None:
 
     assert port_alerts and port_alerts[0].rule == "port_scan"
     assert port_alerts[0].alert_metadata["distinct_ports"] > port_alerts[0].alert_metadata["threshold"]
+    syn_burst = [packet for packet in port_scan if packet.get("tcp_flags") == "S"]
+    background = [packet for packet in port_scan if packet.get("protocol") != "TCP" or packet.get("tcp_flags") != "S"]
+    assert len(syn_burst) >= 100
+    assert 2 <= syn_burst[-1]["timestamp"] - syn_burst[0]["timestamp"] <= 3
+    assert background and max(packet["timestamp"] for packet in background) < syn_burst[0]["timestamp"]
     assert syn_alerts and syn_alerts[0].rule == "syn_flood"
     assert syn_alerts[0].alert_metadata["incomplete_handshakes"] > 100
     assert long_dns_alerts and long_dns_alerts[0].alert_metadata["query_length"] > 100
@@ -53,6 +58,10 @@ def test_each_detection_rule_fires_on_its_synthetic_capture() -> None:
 def test_normal_synthetic_traffic_does_not_trigger_rules() -> None:
     generate_sample_pcaps()
     normal = packets_from(SYNTHETIC_DIR / "synthetic_normal_traffic.pcap")
+    assert len(normal) >= 500
+    assert {packet["protocol"] for packet in normal} >= {"TCP", "UDP", "DNS", "ICMP"}
+    assert len({packet["src_ip"] for packet in normal}) >= 4
+    assert max(packet["timestamp"] for packet in normal) - min(packet["timestamp"] for packet in normal) >= 120
     detectors = (
         detect_port_scans,
         detect_syn_floods,
@@ -83,8 +92,8 @@ def test_run_detection_persists_alerts_from_session_packets() -> None:
         db.commit()
 
         stored = db.scalars(select(Alert).where(Alert.session_id == capture.id)).all()
-        assert len(alerts) == 1
-        assert len(stored) == 1
-        assert stored[0].rule == "port_scan"
-        assert stored[0].alert_metadata["target_ip"] == "198.51.100.20"
+        assert {alert.rule for alert in alerts} == {"port_scan", "syn_flood"}
+        assert {alert.rule for alert in stored} == {"port_scan", "syn_flood"}
+        port_scan_alert = next(alert for alert in stored if alert.rule == "port_scan")
+        assert port_scan_alert.alert_metadata["target_ip"] == "198.51.100.20"
     engine.dispose()

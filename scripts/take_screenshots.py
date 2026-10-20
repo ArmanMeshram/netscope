@@ -104,11 +104,11 @@ def upload_and_wait(base_url: str) -> dict[str, int]:
     return session_ids
 
 
-def select_port_scan(page: Page) -> None:
-    """Select the port scan session and wait for its dashboard to render."""
-    scan_button = page.locator("button.session-item").filter(has_text="port_scan.pcap")
-    scan_button.wait_for(state="visible", timeout=15_000)
-    scan_button.click()
+def select_session(page: Page, filename: str) -> None:
+    """Select one uploaded session and wait for its dashboard to render."""
+    session_button = page.locator("button.session-item").filter(has_text=filename)
+    session_button.wait_for(state="visible", timeout=15_000)
+    session_button.click()
     page.locator("#page-loading").wait_for(state="hidden", timeout=MAX_WAIT_SECONDS * 1000)
     page.locator("#dashboard-content").wait_for(state="visible", timeout=15_000)
     page.locator(".alerts-panel").wait_for(state="visible", timeout=15_000)
@@ -136,16 +136,45 @@ def capture_images(browser: Browser, base_url: str) -> list[Path]:
     """Capture the desktop overview, dashboard panels, and mobile view."""
     page = browser.new_page(viewport={"width": 1440, "height": 1050}, device_scale_factor=1)
     page.goto(base_url, wait_until="networkidle", timeout=45_000)
-    select_port_scan(page)
+    select_session(page, "synthetic_normal_traffic.pcap")
     verify_chart_library(page)
+
+    normal_button = page.locator("button.session-item").filter(has_text="synthetic_normal_traffic.pcap")
+    normal_session_id = normal_button.get_attribute("data-session-id")
+    if normal_session_id is None:
+        raise RuntimeError("Could not locate the mixed synthetic traffic session")
+    normal_session = request_json(f"{base_url}/api/sessions/{normal_session_id}")
+    protocols = request_json(
+        f"{base_url}/api/sessions/{normal_session_id}/summary?bucket_size=1"
+    )["protocol_distribution"]
+    expected_protocols = {"TCP", "UDP", "DNS", "ICMP"}
+    if not expected_protocols.issubset(protocols):
+        raise RuntimeError(f"Synthetic overview is missing expected protocols: {protocols}")
+    normal_alerts = request_json(f"{base_url}/api/sessions/{normal_session_id}/alerts")
+    if normal_session["packet_count"] < 500 or normal_alerts:
+        raise RuntimeError("Synthetic normal traffic must contain at least 500 packets and produce no alerts")
 
     overview = SCREENSHOT_DIR / "dashboard-overview.png"
     alerts = SCREENSHOT_DIR / "alerts-panel.png"
     charts = SCREENSHOT_DIR / "charts.png"
+    document_height = page.evaluate("document.documentElement.scrollHeight")
+    page.set_viewport_size({"width": 1440, "height": max(1050, document_height)})
+    sidebar_height = page.evaluate("document.querySelector('.sidebar').getBoundingClientRect().height")
+    if sidebar_height < document_height - 2:
+        raise RuntimeError("Desktop sidebar does not fill the full overview screenshot height")
     save_screenshot(page, overview, full_page=True)
+
+    select_session(page, "port_scan.pcap")
+    port_scan_id = page.locator("button.session-item").filter(has_text="port_scan.pcap").get_attribute("data-session-id")
+    if port_scan_id is None:
+        raise RuntimeError("Could not locate the synthetic port-scan session")
+    scan_alerts = request_json(f"{base_url}/api/sessions/{port_scan_id}/alerts")
+    if not any(alert["rule"] == "port_scan" for alert in scan_alerts):
+        raise RuntimeError("The synthetic port-scan session did not produce a port_scan alert")
     page.locator(".alerts-panel").screenshot(path=str(alerts), animations="disabled")
     page.locator(".chart-grid").screenshot(path=str(charts), animations="disabled")
 
+    select_session(page, "synthetic_normal_traffic.pcap")
     page.set_viewport_size({"width": 390, "height": 844})
     page.wait_for_timeout(400)
     overflow = page.evaluate("""() => ({

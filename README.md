@@ -6,15 +6,15 @@ NetScope analyzes packet captures to summarize protocols, traffic rates, endpoin
 
 These dashboard screenshots are generated from the synthetic normal-traffic and port-scan captures. They contain no personal browsing capture data.
 
-**Dashboard overview:** the port-scan session with its summary, charts, endpoints, alerts, and packet table.
+**Dashboard overview:** 600 packets of mixed TCP, UDP, DNS, and ICMP traffic, with the full-height session sidebar.
 
 ![NetScope dashboard overview](docs/screenshots/dashboard-overview.png)
 
-**Alerts panel:** anomaly findings produced for the synthetic port scan.
+**Alerts panel:** port-scan and SYN-flood findings from the synthetic scan session.
 
 ![NetScope alerts panel](docs/screenshots/alerts-panel.png)
 
-**Charts:** protocol distribution and packet traffic over time.
+**Charts:** the scan session’s traffic spike over normal background traffic, alongside its protocol distribution.
 
 ![NetScope charts](docs/screenshots/charts.png)
 

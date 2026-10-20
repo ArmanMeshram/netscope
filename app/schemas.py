@@ -1,11 +1,27 @@
 """Pydantic response models for the NetScope REST API."""
 
-from datetime import datetime
-from typing import Any
+from datetime import datetime, timezone
+from typing import Any, overload
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 from app.models import AlertSeverity, CaptureSource, SessionStatus
+
+
+@overload
+def utc_isoformat(value: datetime) -> str: ...
+
+
+@overload
+def utc_isoformat(value: None) -> None: ...
+
+
+def utc_isoformat(value: datetime | None) -> str | None:
+    """Serialize a datetime as an aware UTC ISO-8601 string with a Z suffix."""
+    if value is None:
+        return None
+    normalized = value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
+    return normalized.isoformat().replace("+00:00", "Z")
 
 
 class SessionRead(BaseModel):
@@ -21,6 +37,11 @@ class SessionRead(BaseModel):
     packet_count: int
     byte_count: int
     status: SessionStatus
+
+    @field_serializer("started_at", "ended_at", when_used="json")
+    def serialize_session_times(self, value: datetime | None) -> str | None:
+        """Return session lifecycle times in UTC."""
+        return utc_isoformat(value)
 
 
 class PacketRead(BaseModel):
@@ -40,6 +61,11 @@ class PacketRead(BaseModel):
     tcp_flags: str | None
     extra: dict[str, Any]
 
+    @field_serializer("timestamp", when_used="json")
+    def serialize_timestamp(self, value: datetime) -> str:
+        """Return packet times in UTC."""
+        return utc_isoformat(value)
+
 
 class AlertRead(BaseModel):
     """Public anomaly alert representation."""
@@ -55,6 +81,11 @@ class AlertRead(BaseModel):
     first_seen: datetime
     last_seen: datetime
     alert_metadata: dict[str, Any]
+
+    @field_serializer("first_seen", "last_seen", when_used="json")
+    def serialize_alert_times(self, value: datetime) -> str:
+        """Return alert times in UTC."""
+        return utc_isoformat(value)
 
 
 class PacketPage(BaseModel):
@@ -85,6 +116,11 @@ class TrafficBucket(BaseModel):
 
     timestamp: datetime
     packets: int
+
+    @field_serializer("timestamp", when_used="json")
+    def serialize_timestamp(self, value: datetime) -> str:
+        """Return traffic bucket times in UTC."""
+        return utc_isoformat(value)
 
 
 class SessionSummary(BaseModel):

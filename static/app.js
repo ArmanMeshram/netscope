@@ -65,14 +65,16 @@ function formatDuration(seconds) {
   return `${hours}h ${mins % 60}m`;
 }
 
-function formatDate(value, withSeconds = true) {
+function formatUtc(value, { withSeconds = true, includeDate = true } = {}) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit",
+  const formatted = new Intl.DateTimeFormat(undefined, {
+    ...(includeDate ? { month: "short", day: "2-digit" } : {}),
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "UTC",
     ...(withSeconds ? { second: "2-digit" } : {}),
   }).format(date);
+  return `${formatted} UTC`;
 }
 
 function toast(message) {
@@ -232,7 +234,7 @@ async function loadSelectedDashboard(session, version = state.selectionVersion) 
     $("breadcrumb-session").textContent = session.name;
     $("page-title").textContent = session.name;
     const statusText = session.status === "failed" ? "Processing failed" : `${session.source.toUpperCase()} capture · ${session.status}`;
-    $("page-subtitle").textContent = `${statusText} · Started ${formatDate(session.started_at, false)}`;
+    $("page-subtitle").textContent = `${statusText} · Started ${formatUtc(session.started_at, { withSeconds: false })}`;
     renderSummary(session, summary, alerts);
     $("dashboard-content").hidden = false;
     setLoading(false);
@@ -304,7 +306,7 @@ function renderTraffic(buckets) {
   state.trafficChart = new Chart(canvas, {
     type: "line",
     data: {
-      labels: buckets.map((item) => formatDate(item.timestamp)),
+      labels: buckets.map((item) => formatUtc(item.timestamp, { includeDate: false })),
       datasets: [{ label: "Packets", data: buckets.map((item) => item.packets), borderColor: color, backgroundColor: `${color}20`, fill: true, tension: .35, pointRadius: buckets.length > 50 ? 0 : 2, pointHoverRadius: 4, borderWidth: 2 }],
     },
     options: {
@@ -340,7 +342,7 @@ function renderAlerts(alerts) {
     const evidence = alert.alert_metadata && Object.entries(alert.alert_metadata)
       .filter(([key]) => !["query"].includes(key)).slice(0, 2)
       .map(([key, value]) => `${key.replaceAll("_", " ")}: ${typeof value === "object" ? "…" : value}`).join(" · ");
-    return `<div class="alert-row"><span class="severity ${escapeHtml(severity)}">${escapeHtml(severity)}</span><div><div class="alert-description">${escapeHtml(alert.description)}</div><div class="alert-meta">${escapeHtml(alert.rule)}${source} · ${formatDate(alert.first_seen)}${evidence ? ` · ${escapeHtml(evidence)}` : ""}</div></div></div>`;
+    return `<div class="alert-row"><span class="severity ${escapeHtml(severity)}">${escapeHtml(severity)}</span><div><div class="alert-description">${escapeHtml(alert.description)}</div><div class="alert-meta">${escapeHtml(alert.rule)}${source} · ${formatUtc(alert.first_seen)}${evidence ? ` · ${escapeHtml(evidence)}` : ""}</div></div></div>`;
   }).join("");
 }
 
@@ -384,7 +386,7 @@ function renderPackets(result) {
   } else {
     body.innerHTML = rows.map((packet) => {
       const protocol = String(packet.protocol || "OTHER").toUpperCase();
-      return `<tr><td class="mono">${formatDate(packet.timestamp)}</td><td class="endpoint">${endpoint(packet.src_ip, packet.src_port)}</td><td class="endpoint">${endpoint(packet.dst_ip, packet.dst_port)}</td><td><span class="protocol-badge ${escapeHtml(protocol.toLowerCase())}">${escapeHtml(protocol)}</span></td><td class="mono">${formatNumber(packet.length)} B</td><td><span class="packet-details" title="${escapeHtml(packetDetails(packet))}">${escapeHtml(packetDetails(packet))}</span></td></tr>`;
+      return `<tr><td class="mono">${formatUtc(packet.timestamp)}</td><td class="endpoint">${endpoint(packet.src_ip, packet.src_port)}</td><td class="endpoint">${endpoint(packet.dst_ip, packet.dst_port)}</td><td><span class="protocol-badge ${escapeHtml(protocol.toLowerCase())}">${escapeHtml(protocol)}</span></td><td class="mono">${formatNumber(packet.length)} B</td><td><span class="packet-details" title="${escapeHtml(packetDetails(packet))}">${escapeHtml(packetDetails(packet))}</span></td></tr>`;
     }).join("");
   }
   const start = result.total === 0 ? 0 : result.offset + 1;

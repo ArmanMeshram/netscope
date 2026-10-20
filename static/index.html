@@ -86,7 +86,7 @@
 
           <section class="chart-grid">
             <article class="panel chart-panel">
-              <div class="panel-heading"><div><h2>Traffic over time</h2><p>Packet volume by interval</p></div><label class="bucket-select">Bucket <select id="bucket-size"><option value="1">1 sec</option><option value="5">5 sec</option><option value="10">10 sec</option><option value="60">1 min</option></select></label></div>
+              <div class="panel-heading"><div><h2>Traffic over time (UTC)</h2><p>Packet volume by interval</p></div><label class="bucket-select">Bucket <select id="bucket-size"><option value="1">1 sec</option><option value="5">5 sec</option><option value="10">10 sec</option><option value="60">1 min</option></select></label></div>
               <div class="chart-wrap line-chart-wrap"><canvas id="traffic-chart" aria-label="Traffic over time line chart"></canvas><div class="chart-empty" id="traffic-empty" hidden>No traffic time series available.</div></div>
             </article>
             <article class="panel chart-panel protocol-panel">
@@ -111,7 +111,8 @@
               <button class="button button-filter" type="submit">Apply filters</button>
               <button class="button button-clear" id="clear-filters" type="button">Clear</button>
             </form>
-            <div class="table-scroll"><table><thead><tr><th>TIME</th><th>SOURCE</th><th>DESTINATION</th><th>PROTOCOL</th><th>LENGTH</th><th>DETAILS</th></tr></thead><tbody id="packet-rows"></tbody></table></div>
+            <p class="table-scroll-hint">Swipe horizontally to view all packet columns.</p>
+            <div class="table-scroll" role="region" aria-label="Packet table; scroll horizontally to see all columns" tabindex="0"><table><thead><tr><th>TIME (UTC)</th><th>SOURCE</th><th>DESTINATION</th><th>PROTOCOL</th><th>LENGTH</th><th>DETAILS</th></tr></thead><tbody id="packet-rows"></tbody></table></div>
             <div id="packet-empty" class="table-empty" hidden>No packets match these filters.</div>
             <div class="table-footer"><span id="page-range">Showing 0 packets</span><div class="pagination"><button id="prev-page" type="button" aria-label="Previous page" disabled>←</button><span id="page-indicator">1 / 1</span><button id="next-page" type="button" aria-label="Next page" disabled>→</button></div></div>
           </section>

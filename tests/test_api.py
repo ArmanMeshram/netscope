@@ -46,6 +46,39 @@ def test_dashboard_and_static_assets_are_served(client) -> None:
     assert client.get("/static/styles.css").status_code == 200
 
 
+def test_api_timestamps_are_timezone_aware_utc(client, tmp_path) -> None:
+    response = client.post(
+        "/api/sessions/upload",
+        files={"file": ("timestamp-check.pcap", sample_pcap(tmp_path), "application/octet-stream")},
+    )
+    session_id = response.json()["id"]
+    session = client.get(f"/api/sessions/{session_id}").json()
+    packet = client.get(f"/api/sessions/{session_id}/packets?limit=1").json()["items"][0]
+    bucket = client.get(f"/api/sessions/{session_id}/summary").json()["packets_per_second"][0]
+
+    with database.SessionLocal() as db:
+        db.add(Alert(
+            session_id=session_id,
+            rule="timestamp_test",
+            severity=AlertSeverity.LOW,
+            description="Check UTC formatting",
+            first_seen=datetime.now(timezone.utc),
+            last_seen=datetime.now(timezone.utc),
+        ))
+        db.commit()
+    alert = client.get(f"/api/sessions/{session_id}/alerts").json()[0]
+
+    timestamps = [
+        session["started_at"], session["ended_at"], packet["timestamp"],
+        bucket["timestamp"], alert["first_seen"], alert["last_seen"],
+    ]
+    for value in timestamps:
+        assert value.endswith("Z")
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        assert parsed.tzinfo is not None
+        assert parsed.utcoffset() == timezone.utc.utcoffset(parsed)
+
+
 def test_upload_lists_reads_summarizes_filters_and_deletes_session(client, tmp_path) -> None:
     response = client.post(
         "/api/sessions/upload",
@@ -106,7 +139,9 @@ def test_upload_lists_reads_summarizes_filters_and_deletes_session(client, tmp_p
     assert json_export.status_code == 200
     exported = json_export.json()
     assert len(exported["packets"]) == 3
+    assert exported["packets"][0]["timestamp"].endswith("Z")
     assert exported["alerts"][0]["rule"] == "test_rule"
+    assert exported["alerts"][0]["first_seen"].endswith("Z")
     assert client.get(f"/api/sessions/{session_id}/export?format=xml").status_code == 422
     assert client.get("/api/sessions/999/export").status_code == 404
 
