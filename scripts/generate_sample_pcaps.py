@@ -1,5 +1,6 @@
 """Generate deterministic synthetic PCAPs for parser and detection development."""
 
+import time
 from pathlib import Path
 
 from scapy.layers.dns import DNS, DNSQR
@@ -25,10 +26,15 @@ def generate() -> None:
         Ether() / IP(src="192.0.2.10", dst="198.51.100.53") / UDP(sport=53000, dport=53) / DNS(rd=1, qd=DNSQR(qname="example.test")),
         Ether() / IPv6(src="2001:db8::10", dst="2001:db8::20") / ICMPv6EchoRequest(),
     ])
-    write_capture("port_scan.pcap", [
-        Ether() / IP(src="192.0.2.50", dst="198.51.100.20") / TCP(sport=40000 + port, dport=port, flags="S")
-        for port in range(1, 101)
-    ])
+    scan_start = time.time()
+    scan_packets = []
+    for index, port in enumerate(range(1, 101)):
+        packet = Ether() / IP(src="192.0.2.50", dst="198.51.100.20") / TCP(
+            sport=40000 + port, dport=port, flags="S",
+        )
+        packet.time = scan_start + index * 0.4
+        scan_packets.append(packet)
+    write_capture("port_scan.pcap", scan_packets)
     write_capture("syn_flood.pcap", [
         Ether() / IP(src=f"192.0.2.{index % 200 + 1}", dst="198.51.100.80") / TCP(sport=30000 + index, dport=80, flags="S")
         for index in range(500)
